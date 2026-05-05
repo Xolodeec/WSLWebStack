@@ -1,0 +1,6 @@
+.wsl-state/
+credentials/
+logs/
+*.tar.gz
+assets/phpMyAdmin-*-all-languages.tar.gz
+logs/*.log

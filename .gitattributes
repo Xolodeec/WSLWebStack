@@ -1,0 +1,6 @@
+# WSL runs bash on scripts from /mnt/c; CRLF breaks heredocs and line-1 errors on PHP-as-shell.
+linux/**/*.sh text eol=lf
+linux/**/*.bash text eol=lf
+linux/lib/** text eol=lf
+linux/assets/**/*.php text eol=lf
+linux/assets/**/*.sh text eol=lf
