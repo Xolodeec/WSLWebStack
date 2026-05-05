@@ -11,6 +11,6 @@ MySQL root password: mysql-root.txt line 2
 MySQL app user up password: mysql-up.txt line 2
 
 Cloudflare Tunnel (cloudflared) is installed in WSL. On ${BASE_URL} use "Quick Tunnel" per domain.
-Logs: /var/lib/uchet-tunnel/<name>_local.log | systemctl status uchet-quick-tunnel@<name>_local
+Logs: /var/lib/wslwebstack-tunnel/<name>_local.log | systemctl status wslwebstack-quick-tunnel@<name>_local
 EOF
 chmod 600 "$CREDS_DIR/service-access.txt"

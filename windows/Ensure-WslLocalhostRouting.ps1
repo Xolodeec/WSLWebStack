@@ -1,7 +1,7 @@
-﻿# Dot-source from Install-UchetWslStack.ps1 — fixes Windows browser -> WSL HTTPS when 127.0.0.1:443 is not forwarded.
+﻿# Dot-source from Install-WslWebStack.ps1 — fixes Windows browser -> WSL HTTPS when 127.0.0.1:443 is not forwarded.
 # Strategy: (1) optional [wsl2] networkingMode=mirrored + wsl --shutdown (2) hosts fallback to current WSL vNIC IP.
 
-function Test-WindowsUchetLocalHttps {
+function Test-WindowsLocalWslHttps {
     param([string]$Domain = "localhost")
     $curlExe = Join-Path $env:WINDIR "System32\curl.exe"
     if (-not (Test-Path -LiteralPath $curlExe)) { return $false }
@@ -33,7 +33,7 @@ function Merge-WslConfigMirroredForBrowser {
     }
     $block = @"
 
-# --- Uchet WSL: Windows browser access to https://*.local in WSL (mirrored NIC; WSL 2.0+ / Windows 11 22H2+) ---
+# --- WSLWebStack: Windows browser access to HTTPS in WSL (mirrored NIC; WSL 2.0+ / Windows 11 22H2+) ---
 [wsl2]
 networkingMode=mirrored
 "@
@@ -95,12 +95,12 @@ function Sync-HostsLocalDomainsToIp {
     Write-Host "hosts: bound $($Domains -join ', ') -> $Ip"
 }
 
-function Repair-UchetWindowsToWslHttps {
+function Repair-WindowsToWslHttps {
     param(
         [Parameter(Mandatory)][string]$Distro,
         [string]$Domain = "localhost"
     )
-    if (Test-WindowsUchetLocalHttps -Domain $Domain) {
+    if (Test-WindowsLocalWslHttps -Domain $Domain) {
         Write-Host "Post-check (Windows): https://127.0.0.1:443 with Host $Domain already works."
         return
     }
@@ -109,7 +109,7 @@ function Repair-UchetWindowsToWslHttps {
     if ($merged) {
         Invoke-WslShutdownAndWake -Distro $Distro
     }
-    if (Test-WindowsUchetLocalHttps -Domain $Domain) {
+    if (Test-WindowsLocalWslHttps -Domain $Domain) {
         Write-Host "Post-check (Windows): https://$Domain/ should work in the browser (mirrored networking)."
         return
     }

@@ -22,9 +22,9 @@ foreach ($files as $file) {
 }
 sort($domains);
 
-function uchet_tunnel_row(string $domain): array
+function tunnel_status_row(string $domain): array
 {
-    $cmd = 'sudo /usr/local/bin/uchet-tunnel.sh status ' . escapeshellarg($domain) . ' 2>/dev/null';
+    $cmd = 'sudo /usr/local/bin/wslwebstack-tunnel.sh status ' . escapeshellarg($domain) . ' 2>/dev/null';
     $line = @shell_exec($cmd);
     if ($line === null || $line === '') {
         return ['active' => false, 'url' => ''];
@@ -43,7 +43,7 @@ function uchet_tunnel_row(string $domain): array
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Uchet Domain Manager</title>
+  <title>WSLWebStack — Local domains</title>
   <style>body{font-family:Arial,sans-serif;margin:24px}input,button{padding:8px}li{margin:10px 0}.ok{color:#0a7d20}.err{color:#a50000}.warn{color:#8a5b00}.muted{color:#444;font-size:0.9em}.tunnel{margin-top:6px}</style>
 </head>
 <body>
@@ -55,7 +55,7 @@ function uchet_tunnel_row(string $domain): array
   <p class="warn"><strong>Внимание:</strong> пока туннель включён, выбранный локальный сайт доступен из интернета по выданной ссылке. Не включайте на публичный URL то, что не готовы показать третьим лицам.</p>
   <ul>
     <?php foreach ($domains as $domain):
-        $t = uchet_tunnel_row($domain);
+        $t = tunnel_status_row($domain);
         ?>
       <li>
         <a href="https://<?= htmlspecialchars($domain, ENT_QUOTES, 'UTF-8') ?>/" target="_blank"><?= htmlspecialchars($domain, ENT_QUOTES, 'UTF-8') ?></a>

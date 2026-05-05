@@ -8,7 +8,7 @@ if %errorlevel% neq 0 (
   exit /b 1
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\Install-UchetWslStack.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0windows\Install-WslWebStack.ps1"
 set EXIT_CODE=%errorlevel%
 if %EXIT_CODE% neq 0 (
   echo.

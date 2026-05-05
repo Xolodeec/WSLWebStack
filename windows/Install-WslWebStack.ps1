@@ -1,8 +1,12 @@
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot\UchetWslConfig.ps1"
+. "$PSScriptRoot\WSLWebStackConfig.ps1"
 . "$PSScriptRoot\Ensure-WslLocalhostRouting.ps1"
-$repoRoot = Get-UchetRepoRoot
+$repoRoot = Get-WslWebStackRepoRoot
+
+if ([string]::IsNullOrWhiteSpace($script:WslDistroName)) {
+    $script:WslDistroName = "WSLWebStack"
+}
 
 function Require-Admin {
     $current = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -40,7 +44,8 @@ function Ensure-WSL {
     }
 
     if (-not $statusOk) {
-        Write-Host "Installing WSL and Ubuntu..."
+        Write-Host "Installing WSL and Ubuntu (Store) as a one-time bootstrap..."
+        Write-Host ("After reboot, install.bat creates your working distro '{0}' from that Ubuntu via export/import." -f $script:WslDistroName)
         wsl --install -d Ubuntu
         Write-Host "WSL installed. Reboot Windows and run install.bat again."
         exit 0
@@ -48,9 +53,9 @@ function Ensure-WSL {
 }
 
 function Ensure-UbuntuForFirstRun {
-    if (Test-WslDistro $script:UchetWslDistro) { return }
+    if (Test-WslDistro $script:WslDistroName) { return }
     if ($null -ne (Get-UbuntuSourceDistroName)) { return }
-    Write-Host "Installing Ubuntu (one-time, then it becomes $script:UchetWslDistro)..."
+    Write-Host "Installing Ubuntu from the Store (one-time bootstrap). Next install.bat run clones it into '$script:WslDistroName'."
     wsl --install -d Ubuntu
     Write-Host "Ubuntu installed. Reboot Windows and run install.bat again."
     exit 0
@@ -66,13 +71,13 @@ function Ensure-HostsEntry {
     }
 }
 
-function Import-UbuntuAsUchetDistro {
+function Import-UbuntuAsWslWebStackDistro {
     param([string]$SourceName)
-    $exportTar = Join-Path $env:TEMP ("uchet-wsl-export-" + [guid]::NewGuid().ToString("n") + ".tar")
-    $folderSafe = ($script:UchetWslDistro -replace '[^A-Za-z0-9_-]', '_')
+    $exportTar = Join-Path $env:TEMP ("wslwebstack-export-" + [guid]::NewGuid().ToString("n") + ".tar")
+    $folderSafe = ($script:WslDistroName -replace '[^A-Za-z0-9_-]', '_')
     $installRoot = Join-Path $env:LOCALAPPDATA ($folderSafe + "-WSL")
 
-    Write-Host "Creating '$script:UchetWslDistro' from '$SourceName' (export/import, a few minutes)..."
+    Write-Host "Creating '$script:WslDistroName' from '$SourceName' (export/import, a few minutes)..."
     Write-Host "NOTE: '$SourceName' stays installed. This adds a second distro; remove either later via Windows Apps and Features or: wsl --unregister."
 
     wsl.exe --shutdown
@@ -88,11 +93,20 @@ function Import-UbuntuAsUchetDistro {
     }
     New-Item -ItemType Directory -Force -Path $installRoot | Out-Null
 
-    wsl.exe --import $script:UchetWslDistro $installRoot $exportTar --version 2
+    Write-Host ("Importing WSL distro as '{0}' (this is the name you see in ""wsl -l -v"")." -f $script:WslDistroName)
+    $importOut = (& wsl.exe --import $script:WslDistroName $installRoot $exportTar --version 2 2>&1 | Out-String).TrimEnd()
+    if ($LASTEXITCODE -ne 0) {
+        throw "wsl --import failed ($LASTEXITCODE). $importOut"
+    }
     Remove-Item -Force $exportTar -ErrorAction SilentlyContinue
 
-    wsl.exe --set-default $script:UchetWslDistro
-    Write-Host "WSL distro ready: $script:UchetWslDistro (set as default). Source '$SourceName' is unchanged."
+    wsl.exe --set-default $script:WslDistroName
+    Write-Host "WSL distro ready: $script:WslDistroName (set as default). Source '$SourceName' is unchanged."
+    Start-Sleep -Seconds 3
+    if (-not (Test-WslDistro $script:WslDistroName)) {
+        $diag = (& wsl.exe -l -v 2>&1 | Out-String).TrimEnd()
+        throw "Import claimed success but '$script:WslDistroName' is missing from wsl -l. Output:`n$diag"
+    }
 }
 
 $logDir = Join-Path $repoRoot "logs"
@@ -102,9 +116,10 @@ try {
     Start-Transcript -LiteralPath $installLog -Force | Out-Null
     Write-Host "Windows installer log: $installLog"
     Require-Admin
+    Write-Host "Target WSL distro name: $($script:WslDistroName) (from windows\WSLWebStackConfig.ps1)"
     Ensure-WSL
 
-    $targetDistro = $script:UchetWslDistro
+    $targetDistro = $script:WslDistroName
     $haveTarget = Test-WslDistro $targetDistro
     if ($haveTarget) {
         Write-Host ('WSL distro "' + $targetDistro + '" already exists; skipping import, running Linux provisioning only.')
@@ -115,7 +130,7 @@ try {
         if (-not $src) {
             throw "No Ubuntu-based WSL distro found to copy from. Install Ubuntu (wsl --install -d Ubuntu), reboot if asked, then run the installer again."
         }
-        Import-UbuntuAsUchetDistro -SourceName $src
+        Import-UbuntuAsWslWebStackDistro -SourceName $src
     }
 
     wsl.exe --set-default $targetDistro 2>$null | Out-Null
@@ -142,7 +157,7 @@ try {
 
     Write-Host "Running Linux provisioning in distro: $targetDistro"
     # Build bash -lc argument with single-quoted PS fragments so Windows PowerShell 5.1 does not misparse "&&".
-    $cmd = 'cd ' + "'" + $scriptDirWsl + "'" + ' && chmod +x linux/Provision-UchetWslStack.sh && WSL_DOMAIN=localhost SSL_MODE=local sudo -E ./linux/Provision-UchetWslStack.sh'
+    $cmd = 'cd ' + "'" + $scriptDirWsl + "'" + ' && chmod +x linux/Provision-WslWebStack.sh && WSL_DOMAIN=localhost SSL_MODE=local sudo -E ./linux/Provision-WslWebStack.sh'
     wsl.exe -d $targetDistro -- bash -lc "$cmd"
 
     Ensure-HostsEntry -Domain "localhost"
@@ -160,7 +175,7 @@ try {
         Write-Host "Post-check: could not probe Apache in WSL."
     }
 
-    Repair-UchetWindowsToWslHttps -Distro $targetDistro -Domain "localhost"
+    Repair-WindowsToWslHttps -Distro $targetDistro -Domain "localhost"
 
     $message = @"
 Done.

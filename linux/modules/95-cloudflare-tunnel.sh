@@ -18,12 +18,12 @@ if ! install_cloudflared_pkg; then
     echo "WARNING: Quick Tunnel buttons on https://${WSL_DOMAIN:-localhost}/ will stay unavailable until cloudflared is installed." >&2
     rm -f /etc/apt/sources.list.d/cloudflared.list /usr/share/keyrings/cloudflare-main.gpg 2>/dev/null || true
 else
-    mkdir -p /var/lib/uchet-tunnel
-    chmod 755 /var/lib/uchet-tunnel
+    mkdir -p /var/lib/wslwebstack-tunnel
+    chmod 755 /var/lib/wslwebstack-tunnel
 
-    cat >/usr/local/bin/uchet-tunnel-foreground.sh <<'EOF'
+    cat >/usr/local/bin/wslwebstack-tunnel-foreground.sh <<'EOF'
 #!/bin/bash
-# Runs cloudflared quick tunnel; parses public URL into /var/lib/uchet-tunnel/<instance>.public_url
+# Runs cloudflared quick tunnel; parses public URL into /var/lib/wslwebstack-tunnel/<instance>.public_url
 set -euo pipefail
 INST="${1:?instance required}"
 DOMAIN="$(echo "$INST" | sed 's/_local$/.local/')"
@@ -31,7 +31,7 @@ if [[ ! "$DOMAIN" =~ ^[a-z0-9-]+\.local$ ]]; then
     echo "Invalid instance $INST -> $DOMAIN" >&2
     exit 1
 fi
-STATEDIR=/var/lib/uchet-tunnel
+STATEDIR=/var/lib/wslwebstack-tunnel
 LOG="$STATEDIR/${INST}.log"
 URLFILE="$STATEDIR/${INST}.public_url"
 mkdir -p "$STATEDIR"
@@ -55,9 +55,9 @@ cloudflared tunnel --no-autoupdate \
     --no-tls-verify 2>&1 | parse_stream
 exit "${PIPESTATUS[0]}"
 EOF
-    chmod +x /usr/local/bin/uchet-tunnel-foreground.sh
+    chmod +x /usr/local/bin/wslwebstack-tunnel-foreground.sh
 
-    cat >/etc/systemd/system/uchet-quick-tunnel@.service <<'EOF'
+    cat >/etc/systemd/system/wslwebstack-quick-tunnel@.service <<'EOF'
 [Unit]
 Description=Cloudflare quick tunnel (%i)
 After=network-online.target apache2.service
@@ -65,7 +65,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/uchet-tunnel-foreground.sh %i
+ExecStart=/usr/local/bin/wslwebstack-tunnel-foreground.sh %i
 Restart=on-failure
 RestartSec=5
 
@@ -73,12 +73,12 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    cat >/usr/local/bin/uchet-tunnel.sh <<'EOF'
+    cat >/usr/local/bin/wslwebstack-tunnel.sh <<'EOF'
 #!/bin/bash
 set -euo pipefail
 ACTION="${1:-}"
 DOMAIN="${2:-}"
-STATEDIR=/var/lib/uchet-tunnel
+STATEDIR=/var/lib/wslwebstack-tunnel
 
 domain_to_instance() {
     local d="$1"
@@ -96,10 +96,10 @@ site_exists() {
 
 case "$ACTION" in
 start)
-    [ -n "$DOMAIN" ] || { echo "Usage: uchet-tunnel.sh start <domain.local>"; exit 1; }
+    [ -n "$DOMAIN" ] || { echo "Usage: wslwebstack-tunnel.sh start <domain.local>"; exit 1; }
     site_exists "$DOMAIN" || { echo "No Apache vhost for $DOMAIN"; exit 1; }
     INST=$(domain_to_instance "$DOMAIN")
-    systemctl enable --now "uchet-quick-tunnel@${INST}.service"
+    systemctl enable --now "wslwebstack-quick-tunnel@${INST}.service"
     URLFILE="$STATEDIR/${INST}.public_url"
     for _ in $(seq 1 20); do
         if [ -f "$URLFILE" ] && [ -s "$URLFILE" ]; then
@@ -108,40 +108,40 @@ start)
         fi
         sleep 1
     done
-    if systemctl is-active --quiet "uchet-quick-tunnel@${INST}.service"; then
+    if systemctl is-active --quiet "wslwebstack-quick-tunnel@${INST}.service"; then
         echo "Tunnel running; public URL not written yet — refresh the page in a few seconds."
     else
-        echo "Tunnel failed to start. See: journalctl -u uchet-quick-tunnel@${INST} -n 80 --no-pager"
+        echo "Tunnel failed to start. See: journalctl -u wslwebstack-quick-tunnel@${INST} -n 80 --no-pager"
         exit 1
     fi
     ;;
 stop)
-    [ -n "$DOMAIN" ] || { echo "Usage: uchet-tunnel.sh stop <domain.local>"; exit 1; }
+    [ -n "$DOMAIN" ] || { echo "Usage: wslwebstack-tunnel.sh stop <domain.local>"; exit 1; }
     INST=$(domain_to_instance "$DOMAIN")
-    systemctl disable --now "uchet-quick-tunnel@${INST}.service" 2>/dev/null || true
+    systemctl disable --now "wslwebstack-quick-tunnel@${INST}.service" 2>/dev/null || true
     rm -f "$STATEDIR/${INST}.public_url"
     echo "stopped"
     ;;
 status)
-    [ -n "$DOMAIN" ] || { echo "Usage: uchet-tunnel.sh status <domain.local>"; exit 1; }
+    [ -n "$DOMAIN" ] || { echo "Usage: wslwebstack-tunnel.sh status <domain.local>"; exit 1; }
     INST=$(domain_to_instance "$DOMAIN")
-    active=$(systemctl is-active "uchet-quick-tunnel@${INST}.service" 2>/dev/null || echo inactive)
+    active=$(systemctl is-active "wslwebstack-quick-tunnel@${INST}.service" 2>/dev/null || echo inactive)
     url=""
     [ -f "$STATEDIR/${INST}.public_url" ] && url=$(tr -d '\r\n' <"$STATEDIR/${INST}.public_url")
     printf '%s\t%s\n' "$active" "$url"
     ;;
 *)
-    echo "Usage: uchet-tunnel.sh {start|stop|status} <domain.local>"
+    echo "Usage: wslwebstack-tunnel.sh {start|stop|status} <domain.local>"
     exit 1
     ;;
 esac
 EOF
-    chmod +x /usr/local/bin/uchet-tunnel.sh
+    chmod +x /usr/local/bin/wslwebstack-tunnel.sh
 
     systemctl daemon-reload
 
-    cat >/etc/sudoers.d/uchet-tunnel-manager <<'EOF'
-www-data ALL=(root) NOPASSWD: /usr/local/bin/uchet-tunnel.sh
+    cat >/etc/sudoers.d/wslwebstack-tunnel-manager <<'EOF'
+www-data ALL=(root) NOPASSWD: /usr/local/bin/wslwebstack-tunnel.sh
 EOF
-    chmod 440 /etc/sudoers.d/uchet-tunnel-manager
+    chmod 440 /etc/sudoers.d/wslwebstack-tunnel-manager
 fi

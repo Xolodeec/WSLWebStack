@@ -1,21 +1,21 @@
-# uchet-domain.sh, sudoers, panel files and base vhost (localhost by default).
+# Domain helper script, sudoers, panel files and base vhost (localhost by default).
 # Panel files live under linux/assets/ (LF) so sourcing this script on /mnt/c is not broken by CRLF in heredocs.
 
 ASSET_DIR="$LINUX_DIR/assets"
-install -m0755 "$ASSET_DIR/uchet-domain.sh" /usr/local/bin/uchet-domain.sh
+install -m0755 "$ASSET_DIR/wslwebstack-domain.sh" /usr/local/bin/wslwebstack-domain.sh
 
-cat >/etc/sudoers.d/uchet-domain-manager <<'UChetSudoers'
-www-data ALL=(root) NOPASSWD: /usr/local/bin/uchet-domain.sh
-UChetSudoers
-chmod 440 /etc/sudoers.d/uchet-domain-manager
+cat >/etc/sudoers.d/wslwebstack-domain-manager <<'WSSudoers'
+www-data ALL=(root) NOPASSWD: /usr/local/bin/wslwebstack-domain.sh
+WSSudoers
+chmod 440 /etc/sudoers.d/wslwebstack-domain-manager
 
 PANEL_DOMAIN="${WSL_DOMAIN:-localhost}"
 PANEL_ROOT="/var/www/${PANEL_DOMAIN}"
 
 mkdir -p "$PANEL_ROOT"
-install -m0644 "$ASSET_DIR/uchet-www/index.php" "$PANEL_ROOT/index.php"
-install -m0644 "$ASSET_DIR/uchet-www/add-domain.php" "$PANEL_ROOT/add-domain.php"
-install -m0644 "$ASSET_DIR/uchet-www/tunnel-action.php" "$PANEL_ROOT/tunnel-action.php"
+install -m0644 "$ASSET_DIR/panel-www/index.php" "$PANEL_ROOT/index.php"
+install -m0644 "$ASSET_DIR/panel-www/add-domain.php" "$PANEL_ROOT/add-domain.php"
+install -m0644 "$ASSET_DIR/panel-www/tunnel-action.php" "$PANEL_ROOT/tunnel-action.php"
 
 chown -R www-data:www-data "$PANEL_ROOT"
 
@@ -69,6 +69,6 @@ APACHE
     a2ensite localhost.conf >/dev/null 2>&1 || true
 else
     echo "Enabling Apache site ${PANEL_DOMAIN} (SSL_MODE=${SSL_MODE:-local})..."
-    /usr/local/bin/uchet-domain.sh add "${PANEL_DOMAIN%.local}" "${SSL_MODE:-local}"
+    /usr/local/bin/wslwebstack-domain.sh add "${PANEL_DOMAIN%.local}" "${SSL_MODE:-local}"
 fi
 systemctl reload apache2 2>/dev/null || systemctl restart apache2

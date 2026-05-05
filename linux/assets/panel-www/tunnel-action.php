@@ -21,7 +21,7 @@ if (!is_file('/etc/apache2/sites-available/' . $domain . '.conf')) {
 }
 $do = $_POST['do'] ?? '';
 if ($do === 'start') {
-    $cmd = 'sudo /usr/local/bin/uchet-tunnel.sh start ' . escapeshellarg($domain) . ' 2>&1';
+    $cmd = 'sudo /usr/local/bin/wslwebstack-tunnel.sh start ' . escapeshellarg($domain) . ' 2>&1';
     $out = [];
     $code = 0;
     exec($cmd, $out, $code);
@@ -35,7 +35,7 @@ if ($do === 'start') {
     exit;
 }
 if ($do === 'stop') {
-    $cmd = 'sudo /usr/local/bin/uchet-tunnel.sh stop ' . escapeshellarg($domain) . ' 2>&1';
+    $cmd = 'sudo /usr/local/bin/wslwebstack-tunnel.sh stop ' . escapeshellarg($domain) . ' 2>&1';
     $out = [];
     $code = 0;
     exec($cmd, $out, $code);

@@ -13,7 +13,7 @@ mkdir -p "$REPO_ROOT_PREVIEW/logs"
 LOG_FILE="$REPO_ROOT_PREVIEW/logs/provision-$(date +%Y%m%d-%H%M%S).log"
 # Full stdout/stderr to console and to timestamped log (for post-mortem errors).
 exec > >(tee -a "$LOG_FILE") 2>&1
-echo "=== Uchet WSL provision log: $LOG_FILE ==="
+echo "=== WSLWebStack provision log: $LOG_FILE ==="
 echo "Started: $(date -Iseconds)  user: $(id -un 2>/dev/null || true)  host: $(uname -a 2>/dev/null || true)"
 
 # Scripts on /mnt/c often have Windows CRLF and/or UTF-8 BOM; bash then errors on $'\r' or "﻿#".

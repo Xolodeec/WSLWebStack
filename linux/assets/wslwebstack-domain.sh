@@ -3,7 +3,7 @@ set -euo pipefail
 
 ACTION="${1:-}"
 NAME="${2:-}"
-[ -n "$ACTION" ] || { echo "Usage: uchet-domain.sh add <name> [mode]"; exit 1; }
+[ -n "$ACTION" ] || { echo "Usage: wslwebstack-domain.sh add <name> [mode]"; exit 1; }
 [ -n "$NAME" ] || { echo "Domain name is required"; exit 1; }
 SSL_MODE="${3:-local}"
 
@@ -35,7 +35,7 @@ if [ "$SSL_MODE" = "local" ]; then
     if [ ! -f "$CRT" ] || [ ! -f "$KEY" ]; then
         openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
             -keyout "$KEY" -out "$CRT" \
-            -subj "/CN=${DOMAIN}/O=Uchet/C=RU" >/dev/null 2>&1
+            -subj "/CN=${DOMAIN}/O=WSLWebStack/C=RU" >/dev/null 2>&1
     fi
     cat >"$SITE_AVAIL" <<APACHE
 <VirtualHost *:80>

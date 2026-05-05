@@ -10,7 +10,7 @@ if (!preg_match('/^[a-z0-9][a-z0-9-]{1,30}$/', $name)) {
     exit;
 }
 $sslMode = getenv('SSL_MODE') ?: 'local';
-$cmd = 'sudo /usr/local/bin/uchet-domain.sh add '
+$cmd = 'sudo /usr/local/bin/wslwebstack-domain.sh add '
     . escapeshellarg($name)
     . ' '
     . escapeshellarg($sslMode)

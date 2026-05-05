@@ -1,4 +1,4 @@
-# Sourced by Provision-UchetWslStack.sh — repo paths, secrets, credential stubs.
+# Sourced by Provision-WslWebStack.sh — repo paths, secrets, credential stubs.
 # All variables remain in the same shell as modules (no subshell isolation).
 
 REPO_ROOT="$(cd "$LINUX_DIR/.." && pwd)"

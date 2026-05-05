@@ -2,7 +2,7 @@ param([switch]$BindToWslPrimaryIp)
 
 $ErrorActionPreference = "Stop"
 
-. "$PSScriptRoot\UchetWslConfig.ps1"
+. "$PSScriptRoot\WSLWebStackConfig.ps1"
 . "$PSScriptRoot\Ensure-WslLocalhostRouting.ps1"
 
 $current = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -11,7 +11,7 @@ if (-not $current.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrato
 }
 
 $hostsPath = "$env:WINDIR\System32\drivers\etc\hosts"
-$domainsRaw = wsl -d $script:UchetWslDistro -- bash -lc "ls /etc/apache2/sites-available/*.local.conf 2>/dev/null | sed 's#.*/##' | sed 's#\.conf##' || true"
+$domainsRaw = wsl -d $script:WslDistroName -- bash -lc "ls /etc/apache2/sites-available/*.local.conf 2>/dev/null | sed 's#.*/##' | sed 's#\.conf##' || true"
 $domains = $domainsRaw -split "`r?`n" | Where-Object { $_ -match "^[a-z0-9-]+\.local$" } | Sort-Object -Unique
 
 if (-not $domains -or $domains.Count -eq 0) {
@@ -20,9 +20,9 @@ if (-not $domains -or $domains.Count -eq 0) {
 }
 
 if ($BindToWslPrimaryIp) {
-    $wslIp = Get-WslPrimaryIp -Distro $script:UchetWslDistro
+    $wslIp = Get-WslPrimaryIp -Distro $script:WslDistroName
     if (-not $wslIp) {
-        throw "Could not read WSL IP (wsl -d $($script:UchetWslDistro) -- hostname -I). Start the distro and retry."
+        throw "Could not read WSL IP (wsl -d $($script:WslDistroName) -- hostname -I). Start the distro and retry."
     }
     Sync-HostsLocalDomainsToIp -Domains $domains -Ip $wslIp
     $null = & ipconfig.exe /flushdns 2>&1
@@ -41,7 +41,7 @@ foreach ($domain in $domains) {
 }
 
 if ($append.Count -gt 0) {
-    Add-Content -Path $hostsPath -Value "`n# Added by Uchet WSL installer"
+    Add-Content -Path $hostsPath -Value "`n# Added by WSLWebStack installer"
     Add-Content -Path $hostsPath -Value $append
     Write-Host "Added to hosts:"
     $append | ForEach-Object { Write-Host "  $_" }
