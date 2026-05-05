@@ -28,7 +28,8 @@ function Test-WslDistro([string]$Name) {
 }
 
 function Get-UbuntuSourceDistroName {
-    foreach ($c in @("Ubuntu", "Ubuntu-24.04", "Ubuntu-22.04", "Ubuntu-20.04")) {
+    # Prefer explicit LTS first; generic "Ubuntu" (Store default) may track a non-LTS codename without Ondřej PPA builds.
+    foreach ($c in @("Ubuntu-24.04", "Ubuntu-22.04", "Ubuntu-20.04", "Ubuntu")) {
         if (Test-WslDistro $c) { return $c }
     }
     return $null
@@ -44,21 +45,8 @@ function Ensure-WSL {
     }
 
     if (-not $statusOk) {
-        Write-Host "Installing WSL and Ubuntu (Store) as a one-time bootstrap..."
-        Write-Host ("After reboot, install.bat creates your working distro '{0}' from that Ubuntu via export/import." -f $script:WslDistroName)
-        wsl --install -d Ubuntu
-        Write-Host "WSL installed. Reboot Windows and run install.bat again."
-        exit 0
+        throw "WSL is not available. Follow README: enable WSL2 and install Ubuntu 24.04 first, then run install.bat again."
     }
-}
-
-function Ensure-UbuntuForFirstRun {
-    if (Test-WslDistro $script:WslDistroName) { return }
-    if ($null -ne (Get-UbuntuSourceDistroName)) { return }
-    Write-Host "Installing Ubuntu from the Store (one-time bootstrap). Next install.bat run clones it into '$script:WslDistroName'."
-    wsl --install -d Ubuntu
-    Write-Host "Ubuntu installed. Reboot Windows and run install.bat again."
-    exit 0
 }
 
 function Ensure-HostsEntry {
@@ -125,11 +113,11 @@ try {
         Write-Host ('WSL distro "' + $targetDistro + '" already exists; skipping import, running Linux provisioning only.')
     }
     if (-not $haveTarget) {
-        Ensure-UbuntuForFirstRun
         $src = Get-UbuntuSourceDistroName
         if (-not $src) {
-            throw "No Ubuntu-based WSL distro found to copy from. Install Ubuntu (wsl --install -d Ubuntu), reboot if asked, then run the installer again."
+            throw ("No Ubuntu WSL distro found to copy from. Install '{0}' first (see README), e.g. wsl --install -d {0} or Microsoft Store, then run install.bat. Supported source names: Ubuntu-24.04, Ubuntu-22.04, Ubuntu-20.04, Ubuntu." -f $script:WslBootstrapDistroName)
         }
+        Write-Host "Import source: $src -> $targetDistro"
         Import-UbuntuAsWslWebStackDistro -SourceName $src
     }
 
