@@ -2,6 +2,11 @@
 # Panel files live under linux/assets/ (LF) so sourcing this script on /mnt/c is not broken by CRLF in heredocs.
 
 ASSET_DIR="$LINUX_DIR/assets"
+mkdir -p /usr/local/lib/wslwebstack
+install -m0644 "$ASSET_DIR/wslwebstack-perms.sh" /usr/local/lib/wslwebstack/perms.sh
+# shellcheck source=/dev/null
+. /usr/local/lib/wslwebstack/perms.sh
+wslwebstack_register_dev_user || true
 install -m0755 "$ASSET_DIR/wslwebstack-domain.sh" /usr/local/bin/wslwebstack-domain.sh
 
 cat >/etc/sudoers.d/wslwebstack-domain-manager <<'WSSudoers'
@@ -18,7 +23,7 @@ install -m0644 "$ASSET_DIR/panel-www/add-domain.php" "$PANEL_ROOT/add-domain.php
 install -m0644 "$ASSET_DIR/panel-www/tunnel-action.php" "$PANEL_ROOT/tunnel-action.php"
 install -m0644 "$ASSET_DIR/panel-www/remove-domain.php" "$PANEL_ROOT/remove-domain.php"
 
-chown -R www-data:www-data "$PANEL_ROOT"
+wslwebstack_apply_site_perms "$PANEL_ROOT" || chown -R www-data:www-data "$PANEL_ROOT"
 
 # Register Apache vhost + SSL here so the base site works even if a later module fails.
 if [ "$PANEL_DOMAIN" = "localhost" ]; then

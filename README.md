@@ -68,6 +68,23 @@
 - `windows/` — подготовка WSL и интеграция с Windows
 - `linux/` — модули провижининга внутри WSL
 
+## Права на каталоги сайтов (/var/www)
+
+Каталоги сайтов остаются **www-data:www-data**, каталоги с режимом **2775** (setgid), файлы **664**. Установщик один раз добавляет в группу `www-data` пользователя WSL, под которым шла установка (см. `/etc/wslwebstack/dev-user`). Тогда вы пишете в `/var/www` как член группы, Apache — как `www-data`.
+
+После установки перезайдите в WSL (`wsl --shutdown` или новый терминал) и проверьте: `groups` должен содержать `www-data`.
+
+Другой логин для группы: `WSLWEBSTACK_DEV_USER=логин` перед `install.bat` или запись в `/etc/wslwebstack/dev-user` и повторный `install.bat`.
+
+Для уже созданных сайтов до обновления — один раз:
+
+```bash
+sudo chown -R www-data:www-data /var/www/имя.local
+sudo find /var/www/имя.local -type d -exec chmod 2775 {} \;
+sudo find /var/www/имя.local -type f -exec chmod 664 {} \;
+sudo usermod -aG www-data "$USER"
+```
+
 ## Если сайт не открывается
 
 - Запустить `install.bat` повторно от администратора.

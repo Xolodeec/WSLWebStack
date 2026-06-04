@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# shellcheck source=/dev/null
+. /usr/local/lib/wslwebstack/perms.sh 2>/dev/null || true
+
 ACTION="${1:-}"
 NAME="${2:-}"
 [ -n "$ACTION" ] || { echo "Usage: wslwebstack-domain.sh {add|remove} <name> [ssl_mode]"; exit 1; }
@@ -43,9 +46,13 @@ echo "<h1>${DOMAIN} created</h1>";
 echo "<p>Directory: ${ROOT}</p>";
 PHP
 fi
-chown -R www-data:www-data "$ROOT"
-find "$ROOT" -type d -exec chmod 775 {} \;
-find "$ROOT" -type f -exec chmod 664 {} \;
+if declare -F wslwebstack_apply_site_perms >/dev/null 2>&1; then
+    wslwebstack_apply_site_perms "$ROOT"
+else
+    chown -R www-data:www-data "$ROOT"
+    find "$ROOT" -type d -exec chmod 775 {} \;
+    find "$ROOT" -type f -exec chmod 664 {} \;
+fi
 
 if [ "$SSL_MODE" = "local" ]; then
     mkdir -p /etc/ssl/wsl
