@@ -11,6 +11,7 @@ if ($csrf === '' || !hash_equals($_SESSION['csrf'] ?? '', $csrf)) {
     exit;
 }
 $domain = strtolower(trim((string)($_POST['domain'] ?? '')));
+
 if (!preg_match('/^[a-z0-9-]+\.local$/', $domain)) {
     header('Location: /?error=' . rawurlencode('Invalid domain'));
     exit;
@@ -20,6 +21,7 @@ if (!is_file('/etc/apache2/sites-available/' . $domain . '.conf')) {
     exit;
 }
 $do = $_POST['do'] ?? '';
+
 if ($do === 'start') {
     $cmd = 'sudo /usr/local/bin/wslwebstack-tunnel.sh start ' . escapeshellarg($domain) . ' 2>&1';
     $out = [];

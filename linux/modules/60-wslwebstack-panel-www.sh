@@ -16,6 +16,7 @@ mkdir -p "$PANEL_ROOT"
 install -m0644 "$ASSET_DIR/panel-www/index.php" "$PANEL_ROOT/index.php"
 install -m0644 "$ASSET_DIR/panel-www/add-domain.php" "$PANEL_ROOT/add-domain.php"
 install -m0644 "$ASSET_DIR/panel-www/tunnel-action.php" "$PANEL_ROOT/tunnel-action.php"
+install -m0644 "$ASSET_DIR/panel-www/remove-domain.php" "$PANEL_ROOT/remove-domain.php"
 
 chown -R www-data:www-data "$PANEL_ROOT"
 

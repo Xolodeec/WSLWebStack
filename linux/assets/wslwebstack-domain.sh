@@ -3,7 +3,7 @@ set -euo pipefail
 
 ACTION="${1:-}"
 NAME="${2:-}"
-[ -n "$ACTION" ] || { echo "Usage: wslwebstack-domain.sh add <name> [mode]"; exit 1; }
+[ -n "$ACTION" ] || { echo "Usage: wslwebstack-domain.sh {add|remove} <name> [ssl_mode]"; exit 1; }
 [ -n "$NAME" ] || { echo "Domain name is required"; exit 1; }
 SSL_MODE="${3:-local}"
 
@@ -17,6 +17,23 @@ ROOT="/var/www/${DOMAIN}"
 SITE_AVAIL="/etc/apache2/sites-available/${DOMAIN}.conf"
 CRT="/etc/ssl/wsl/${DOMAIN}.crt"
 KEY="/etc/ssl/wsl/${DOMAIN}.key"
+TUNNEL_INST="${NAME}_local"
+
+if [ "$ACTION" = "remove" ]; then
+    systemctl disable --now "wslwebstack-quick-tunnel@${TUNNEL_INST}.service" 2>/dev/null || true
+    rm -f "/var/lib/wslwebstack-tunnel/${TUNNEL_INST}.public_url" \
+        "/var/lib/wslwebstack-tunnel/${TUNNEL_INST}.log" 2>/dev/null || true
+    a2dissite "${DOMAIN}.conf" 2>/dev/null || true
+    rm -f "$SITE_AVAIL" "/etc/apache2/sites-enabled/${DOMAIN}.conf"
+    systemctl reload apache2
+    echo "removed vhost $DOMAIN"
+    exit 0
+fi
+
+if [ "$ACTION" != "add" ]; then
+    echo "Unknown action: $ACTION (use add or remove)"
+    exit 1
+fi
 
 mkdir -p "$ROOT"
 if [ ! -f "$ROOT/index.php" ]; then

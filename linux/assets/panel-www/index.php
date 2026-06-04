@@ -5,6 +5,7 @@ session_start();
 if (empty($_SESSION['csrf'])) {
     $_SESSION['csrf'] = bin2hex(random_bytes(16));
 }
+
 $csrf = $_SESSION['csrf'];
 
 $error = $_GET['error'] ?? '';
@@ -674,6 +675,11 @@ function h(string $s): string
                 <button type="submit" class="btn btn-primary">Запустить туннель</button>
               </form>
               <?php endif; ?>
+              <form method="post" action="/remove-domain.php" onsubmit="return confirm('Удалить конфигурацию Apache для <?= h($domain) ?>?');">
+                <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+                <input type="hidden" name="domain" value="<?= h($domain) ?>">
+                <button type="submit" class="btn btn-ghost">Удалить</button>
+              </form>
             </div>
           </article>
           <?php endforeach; ?>
